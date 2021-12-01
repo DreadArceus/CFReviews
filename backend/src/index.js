@@ -57,10 +57,6 @@ const main = async () => {
     res.send(ret);
   });
 
-  app.post("/mp", (req, res) => {
-    client.query(`INSERT INTO problem(code) VALUES($1)`, [req.body.code]);
-  });
-
   app.post("/register", (req, res) => {
     client
       .query(`INSERT INTO users(username, password) VALUES($1, $2)`, [
@@ -68,7 +64,7 @@ const main = async () => {
         req.body.password,
       ])
       .then(() => {
-        res.send({ username: req.body.username });
+        res.send("success");
       });
   });
   app.post("/login", (req, res) => {
@@ -81,34 +77,75 @@ const main = async () => {
         if (result.rowCount === 0) {
           res.send({ error: "Invalid username or password" });
         } else {
-          res.send({ username: req.body.username });
+          res.send({ username: req.body.username, id: result.rows[0].id });
         }
       });
-  })
-
-  app.post("/mr", (req, res) => {
-    client.query(`INSERT INTO review(content, uid, pid) VALUES($1, $2, $3)`, [
-      req.body.content,
-      req.body.uid,
-      req.body.pid,
-    ]);
   });
 
-  app.get("/ur", (req, res) => {
-    client
-      .query(`SELECT * FROM review WHERE uid = $1`, [req.body.uid])
+  app.post("/problemReviews", async (req, res) => {
+    var pid;
+    await client
+      .query(`SELECT * FROM problem WHERE code = $1`, [req.body.code])
       .then((result) => {
-        res.send(result.rows);
+        if (result.rowCount === 0) {
+          client.query(`INSERT INTO problem(code) VALUES($1)`, [req.body.code]);
+          client
+            .query(`SELECT * FROM problem WHERE code = $1`, [req.body.code])
+            .then((result) => (pid = result.rows[0].id));
+        } else {
+          pid = result.rows[0].id;
+        }
+      });
+    client
+      .query(
+        `SELECT a.*, b.username FROM review AS a INNER JOIN users AS b ON a.uid = b.id WHERE pid = $1`,
+        [pid]
+      )
+      .then((result) => {
+        const reviews = [];
+        for (var id = 0; id < result.rows.length; id++) {
+          const row = result.rows[id];
+          reviews.push({
+            id: row.id,
+            content: row.content,
+            user: row.username,
+          });
+        }
+        res.send({ id: pid, reviews: reviews });
       });
   });
 
-  app.get("/pr", (req, res) => {
+  app.post("/newReview", (req, res) => {
     client
-      .query(`SELECT * FROM review WHERE pid = $1`, [req.body.pid])
-      .then((result) => {
-        res.send(result.rows);
+      .query(`INSERT INTO review(content, uid, pid) VALUES($1, $2, $3)`, [
+        req.body.content,
+        req.body.uid,
+        req.body.pid,
+      ])
+      .then(() => {
+        client
+          .query(`SELECT review.id FROM review WHERE uid = $1 AND pid = $2`, [
+            req.body.uid,
+            req.body.pid,
+          ])
+          .then((result) => {
+            res.send({ id: result.rows[0].id });
+          });
       });
+  });
+  app.post("/deleteReview", (req, res) => {
+    client.query(`DELETE FROM review WHERE id = $1`, [req.body.id]).then(() => {
+      res.send("success");
+    });
   });
 };
 
 main().catch((e) => console.log(e));
+
+// app.get("/ur", (req, res) => {
+//   client
+//     .query(`SELECT * FROM review WHERE uid = $1`, [req.body.uid])
+//     .then((result) => {
+//       res.send(result.rows);
+//     });
+// });

@@ -8,6 +8,8 @@ const api = axios.create({
 });
 
 const App = () => {
+  const [uid, setUid] = useState(0);
+  const [pid, setPid] = useState(0);
   const [user, setUser] = useState("");
   const logout = () => {
     setUser("");
@@ -23,12 +25,13 @@ const App = () => {
             alert(res.data.error);
           } else {
             setUser(res.data.username);
+            setUid(res.data.id);
             login(() => ({ username: "", password: "" }));
             alert(`Logged in as ${res.data.username}`);
           }
         })
         .catch((err) => console.log(err));
-  });
+  }, [lInfo]);
 
   const [rInfo, register] = useState({ username: "", password: "" });
   useEffect(() => {
@@ -36,21 +39,52 @@ const App = () => {
       api
         .post("/register", rInfo)
         .then((res) => {
-          setUser(res.data.username);
           register(() => ({ username: "", password: "" }));
-          alert(`Logged in as ${res.data.username}`);
+          login(rInfo);
         })
         .catch((err) => console.log(err));
-  });
+  }, [rInfo]);
 
-  const [reviews, setReviews] = useState([
-    {
-      text: "Great problem must try, would recommend for anyone with rating more than 1400",
-      user: "dread",
-      me: true,
-    },
-    { text: "skdiasjdiojsad", user: "notdread", me: false },
-  ]);
+  const [currentProblem, getProblem] = useState("");
+  const [reviews, setReviews] = useState([]);
+  useEffect(() => {
+    if (currentProblem)
+      api
+        .post(`/problemReviews`, { code: currentProblem })
+        .then((res) => {
+          setPid(res.data.id);
+          setReviews(res.data.reviews);
+        })
+        .catch((err) => console.log(err));
+  }, [currentProblem]);
+
+  const [currentReview, setCurrentReview] = useState("");
+  useEffect(() => {
+    if (currentReview) {
+      api
+        .post("/newReview", { content: currentReview, pid: pid, uid: uid })
+        .then((res) => {
+          setReviews([
+            ...reviews,
+            {
+              id: res.data.id,
+              content: currentReview,
+              user: user,
+            },
+          ]);
+        });
+    }
+  }, [currentReview]);
+
+  const [toDelete, setToDelete] = useState(0);
+  useEffect(() => {
+    if (toDelete) {
+      api.post("/deleteReview", { id: toDelete }).then(() => {
+        setReviews(reviews.filter((r) => r.id !== toDelete));
+      });
+      setToDelete(0);
+    }
+  }, [reviews, toDelete]);
 
   return (
     <div>
@@ -59,8 +93,16 @@ const App = () => {
         login={login}
         register={register}
         logout={logout}
+        getProblem={getProblem}
       />
-      <Problem code="123A" reviews={reviews} setReviews={setReviews} />
+      <Problem
+        loggedIn={user !== ""}
+        user={user}
+        code={currentProblem}
+        reviews={reviews}
+        setCurrentReview={setCurrentReview}
+        handleDelete={setToDelete}
+      />
     </div>
   );
 };

@@ -10,10 +10,18 @@ import {
   DialogActions,
   DialogTitle,
   TextField,
+  makeStyles,
 } from "@material-ui/core";
 import { useState } from "react";
 
-export const Navbar = ({ loggedIn, logout, login, register }) => {
+const useStyles = makeStyles((theme) => ({
+  input: {
+    color: "#FFF",
+  },
+}));
+
+export const Navbar = ({ loggedIn, logout, login, register, getProblem }) => {
+  const classes = useStyles();
   const [open, setOpen] = useState(false);
   const handleClickOpen = () => {
     setOpen(true);
@@ -35,6 +43,14 @@ export const Navbar = ({ loggedIn, logout, login, register }) => {
     handleClose();
     setUsername("");
     setPassword("");
+  };
+
+  const [problemCode, setProblemCode] = useState("");
+  const openProblem = () => {
+    if (problemCode) {
+      getProblem(problemCode);
+      setProblemCode("");
+    }
   };
 
   const genLogin = () => {
@@ -60,14 +76,17 @@ export const Navbar = ({ loggedIn, logout, login, register }) => {
           </Typography>
           <div style={{ textAlign: "center", width: "95vw" }}>
             <TextField
+              inputProps={{ className: classes.input }}
               color="secondary"
               variant="standard"
               margin="dense"
               style={{ width: "500px" }}
+              value={problemCode}
+              onChange={(e) => setProblemCode(e.target.value)}
             />
             <Button
               color="inherit"
-              onClick={() => {}}
+              onClick={openProblem}
               style={{ marginTop: "10px" }}
             >
               Open Problem

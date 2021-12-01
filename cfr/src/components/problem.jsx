@@ -3,7 +3,7 @@ import Send from "@material-ui/icons/Send";
 import { useState } from "react";
 import { Review } from "./review";
 
-export const Problem = ({ code, reviews, setReviews }) => {
+export const Problem = ({ user, code, reviews, setCurrentReview, handleDelete, loggedIn }) => {
   const [newReview, setNewReview] = useState("");
   return (
     <div style={{ display: "block", margin: "auto", width: "fit-content" }}>
@@ -15,28 +15,37 @@ export const Problem = ({ code, reviews, setReviews }) => {
           fontSize: "42.0px",
         }}
       >
-        {code}
+        {code || "Enter a problem code above to get started"}
       </div>
-      <div style={{ height: "400px", overflow: "scroll", margin: "5px" }}>
-        {reviews.map((review) => {
-          return <Review {...review} />;
+      <div style={{ display:"block", margin: "auto", height: "500px", overflow: "auto" }}>
+        {reviews.map(({ id, ...review }) => {
+          return (
+            <Review
+              handleDelete={() => handleDelete(id)}
+              key={id}
+              {...review}
+              me={review.user === user}
+            />
+          );
         })}
       </div>
-      <div>
+      <div style={{width: "fit-content", display: "block", margin: "auto"}}>
         <TextField
           style={{ margin: "10px", width: "450px" }}
           value={newReview}
           onChange={(e) => {
             setNewReview(e.target.value);
           }}
+          disabled={!loggedIn}
         ></TextField>
         <IconButton
           onClick={() => {
             if (newReview) {
-              setReviews([...reviews, newReview]);
+              setCurrentReview(newReview);
               setNewReview("");
             }
           }}
+          disabled={!loggedIn}
         >
           <Send />
         </IconButton>
