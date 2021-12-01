@@ -82,6 +82,12 @@ const main = async () => {
       });
   });
 
+  app.get("/problems", (req, res) => {
+    client.query(`SELECT * FROM problem`).then((result) => {
+      res.send(result.rows);
+    });
+  });
+
   app.post("/problemReviews", async (req, res) => {
     var pid;
     await client
@@ -115,7 +121,17 @@ const main = async () => {
       });
   });
 
-  app.post("/newReview", (req, res) => {
+  app.post("/newReview", async (req, res) => {
+    await client
+      .query(`SELECT * FROM review WHERE uid = $1 AND pid = $2`, [
+        req.body.uid,
+        req.body.pid,
+      ])
+      .then((result) => {
+        if (result.rowCount) {
+          res.send({ error: "You have already reviewed this problem" });
+        }
+      });
     client
       .query(`INSERT INTO review(content, uid, pid) VALUES($1, $2, $3)`, [
         req.body.content,
@@ -141,11 +157,3 @@ const main = async () => {
 };
 
 main().catch((e) => console.log(e));
-
-// app.get("/ur", (req, res) => {
-//   client
-//     .query(`SELECT * FROM review WHERE uid = $1`, [req.body.uid])
-//     .then((result) => {
-//       res.send(result.rows);
-//     });
-// });

@@ -45,6 +45,20 @@ const App = () => {
         .catch((err) => console.log(err));
   }, [rInfo]);
 
+  // const [trigger, setTrigger] = useState(false);
+  // const [allProblems, setAllProblems] = useState([]);
+  // useEffect(() => {
+  //   if (trigger) {
+  //     api
+  //       .get("/problems")
+  //       .then((res) => {
+  //         setAllProblems(() => res.data);
+  //         setTrigger(() => false);
+  //       })
+  //       .catch((err) => console.log(err));
+  //   }
+  // });
+
   const [currentProblem, getProblem] = useState("");
   const [reviews, setReviews] = useState([]);
   useEffect(() => {
@@ -64,14 +78,18 @@ const App = () => {
       api
         .post("/newReview", { content: currentReview, pid: pid, uid: uid })
         .then((res) => {
-          setReviews([
-            ...reviews,
-            {
-              id: res.data.id,
-              content: currentReview,
-              user: user,
-            },
-          ]);
+          if (res.data.error) {
+            alert(res.data.error);
+          } else {
+            setReviews([
+              ...reviews,
+              {
+                id: res.data.id,
+                content: currentReview,
+                user: user,
+              },
+            ]);
+          }
         });
     }
   }, [currentReview]);
@@ -94,6 +112,8 @@ const App = () => {
         register={register}
         logout={logout}
         getProblem={getProblem}
+        // allProblems={allProblems}
+        // triggerOn={() => setTrigger(true)}
       />
       <Problem
         loggedIn={user !== ""}
