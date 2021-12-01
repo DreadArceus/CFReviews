@@ -13,22 +13,28 @@ import {
 } from "@material-ui/core";
 import { useState } from "react";
 
-export const Navbar = ({ loggedIn, handleLogout }) => {
+export const Navbar = ({ loggedIn, logout, login, register }) => {
   const [open, setOpen] = useState(false);
   const handleClickOpen = () => {
     setOpen(true);
   };
-
   const handleClose = () => {
     setOpen(false);
   };
 
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const handleLogin = () => {
+    login({ username, password });
     handleClose();
+    setUsername("");
+    setPassword("");
   };
-
   const handleRegister = () => {
+    register({ username, password });
     handleClose();
+    setUsername("");
+    setPassword("");
   };
 
   const genLogin = () => {
@@ -39,7 +45,7 @@ export const Navbar = ({ loggedIn, handleLogout }) => {
         </Button>
       );
     return (
-      <Button color="inherit" onClick={handleLogout}>
+      <Button color="inherit" onClick={logout}>
         Logout
       </Button>
     );
@@ -81,6 +87,8 @@ export const Navbar = ({ loggedIn, handleLogout }) => {
                 label="Username"
                 fullWidth
                 variant="standard"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
               <TextField
                 margin="dense"
@@ -89,6 +97,8 @@ export const Navbar = ({ loggedIn, handleLogout }) => {
                 fullWidth
                 type="password"
                 variant="standard"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </DialogContent>
             <DialogActions>

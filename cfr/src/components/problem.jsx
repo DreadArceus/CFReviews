@@ -3,15 +3,7 @@ import Send from "@material-ui/icons/Send";
 import { useState } from "react";
 import { Review } from "./review";
 
-export const Problem = ({ code }) => {
-  const [reviews, setReviews] = useState([
-    {
-      text: "Great problem must try, would recommend for anyone with rating more than 1400",
-      user: "dread",
-      me: true,
-    },
-    { text: "skdiasjdiojsad", user: "notdread", me: false },
-  ]);
+export const Problem = ({ code, reviews, setReviews }) => {
   const [newReview, setNewReview] = useState("");
   return (
     <div style={{ display: "block", margin: "auto", width: "fit-content" }}>
