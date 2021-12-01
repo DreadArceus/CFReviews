@@ -5,20 +5,29 @@ import { Review } from "./review";
 
 export const Problem = ({ code }) => {
   const [reviews, setReviews] = useState([
-    "Great problem must try, would recommend for anyone with rating more than 1400",
-    "skdiasjdiojsad",
-    "asdojaosijdoiasd",
-    "soidjoiasjdioaj",
+    {
+      text: "Great problem must try, would recommend for anyone with rating more than 1400",
+      user: "dread",
+      me: true,
+    },
+    { text: "skdiasjdiojsad", user: "notdread", me: false },
   ]);
   const [newReview, setNewReview] = useState("");
   return (
     <div style={{ display: "block", margin: "auto", width: "fit-content" }}>
-      <div style={{ display: "block", margin: "auto", textAlign: "center" }}>
+      <div
+        style={{
+          display: "block",
+          margin: "auto",
+          textAlign: "center",
+          fontSize: "42.0px",
+        }}
+      >
         {code}
       </div>
-      <div class="reviews">
+      <div style={{ height: "400px", overflow: "scroll", margin: "5px" }}>
         {reviews.map((review) => {
-          return <Review text={review} />;
+          return <Review {...review} />;
         })}
       </div>
       <div>
@@ -31,8 +40,10 @@ export const Problem = ({ code }) => {
         ></TextField>
         <IconButton
           onClick={() => {
-            setReviews([...reviews, newReview]);
-            setNewReview("");
+            if (newReview) {
+              setReviews([...reviews, newReview]);
+              setNewReview("");
+            }
           }}
         >
           <Send />

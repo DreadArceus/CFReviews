@@ -20,8 +20,7 @@ const main = async () => {
     (
       id INTEGER PRIMARY KEY,
       code TEXT
-    )
-  `);
+    )`);
     await client.query(`
     CREATE TABLE IF NOT EXISTS users
     (
