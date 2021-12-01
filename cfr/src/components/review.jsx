@@ -1,7 +1,6 @@
 import { Button } from "@material-ui/core";
 
 export const Review = ({ content, user, me, handleDelete }) => {
-  const handleEdit = () => {};
   return (
     <div
       style={{
@@ -23,9 +22,6 @@ export const Review = ({ content, user, me, handleDelete }) => {
       </div>
       <div style={{ display: "inline-block", width: "300px" }}>{content}</div>
       <div style={{ display: "inline-block" }}>
-        <Button disabled={!me} onClick={handleEdit}>
-          Edit
-        </Button>
         <Button disabled={!me} onClick={handleDelete}>
           Delete
         </Button>

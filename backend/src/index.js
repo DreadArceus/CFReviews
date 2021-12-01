@@ -1,16 +1,15 @@
 const express = require("express");
-const { Client } = require("pg");
+const mysql = require("mysql");
 const cors = require("cors");
 
 const main = async () => {
-  const client = new Client({
-    user: "postgres",
-    host: "localhost",
-    database: "cfrDB",
-    password: "11037",
-    port: 5432,
-  });
-  await client.connect();
+var connection = mysql.createConnection({
+  host     : 'localhost',
+  user     : 'root',
+  password : 'lasertag',
+  database : 'cfrDB'
+});
+  await connection.connect();
 
   const app = express();
   app.use(cors({ origin: "http://localhost:3000" }));
@@ -18,26 +17,26 @@ const main = async () => {
 
   app.listen(3333, async () => {
     console.log("Server started on port 3333");
-    await client.query(`
+    await connection.query(`
     CREATE TABLE IF NOT EXISTS problem
     (
       id SERIAL PRIMARY KEY,
       code TEXT
     )`);
-    await client.query(`
+    await connection.query(`
     CREATE TABLE IF NOT EXISTS users
     (
       id SERIAL PRIMARY KEY,
       username VARCHAR(255) NOT NULL,
       password VARCHAR(255) NOT NULL
     )`);
-    await client.query(`
+    await connection.query(`
     CREATE TABLE IF NOT EXISTS review
     (
       id SERIAL PRIMARY KEY, 
       content TEXT,
-      uid INTEGER,
-      pid INTEGER,
+      uid BIGINT UNSIGNED,
+      pid BIGINT UNSIGNED,
       FOREIGN KEY (uid) REFERENCES users(id),
       FOREIGN KEY (pid) REFERENCES problem(id)
     )`);
@@ -45,112 +44,111 @@ const main = async () => {
 
   app.get("/", async (req, res) => {
     const ret = { problem: [], users: [], review: [] };
-    await client.query(`SELECT * FROM problem`).then((result) => {
+    await connection.query(`SELECT * FROM problem`).then((result) => {
       ret.problem = result.rows;
     });
-    await client.query(`SELECT * FROM users`).then((result) => {
+    await connection.query(`SELECT * FROM users`).then((result) => {
       ret.users = result.rows;
     });
-    await client.query(`SELECT * FROM review`).then((result) => {
+    await connection.query(`SELECT * FROM review`).then((result) => {
       ret.review = result.rows;
     });
     res.send(ret);
   });
 
   app.post("/register", (req, res) => {
-    client
-      .query(`INSERT INTO users(username, password) VALUES($1, $2)`, [
+    connection
+      .query(`INSERT INTO users(username, password) VALUES(?, ?)`, [
         req.body.username,
         req.body.password,
-      ])
-      .then(() => {
+      ], (error, result) => {
         res.send("success");
       });
   });
   app.post("/login", (req, res) => {
-    client
-      .query(`SELECT * FROM users WHERE username = $1 AND password = $2`, [
+    connection
+      .query(`SELECT * FROM users WHERE username = ? AND password = ?`, [
         req.body.username,
         req.body.password,
-      ])
-      .then((result) => {
-        if (result.rowCount === 0) {
+      ],(error,result) => {
+        if (result.length === 0) {
           res.send({ error: "Invalid username or password" });
         } else {
-          res.send({ username: req.body.username, id: result.rows[0].id });
+          res.send({ username: req.body.username, id: result[0].id });
         }
       });
   });
 
   app.get("/problems", (req, res) => {
-    client.query(`SELECT * FROM problem`).then((result) => {
-      res.send(result.rows);
+    connection.query(`SELECT * FROM problem`,(errors,result) => {
+      res.send(result);
     });
   });
 
   app.post("/problemReviews", async (req, res) => {
-    var pid;
-    await client
-      .query(`SELECT * FROM problem WHERE code = $1`, [req.body.code])
-      .then((result) => {
-        if (result.rowCount === 0) {
-          client.query(`INSERT INTO problem(code) VALUES($1)`, [req.body.code]);
-          client
-            .query(`SELECT * FROM problem WHERE code = $1`, [req.body.code])
-            .then((result) => (pid = result.rows[0].id));
+    connection
+      .query(`SELECT * FROM problem WHERE code = ?`, [req.body.code],
+      (errors,result) => {
+        var pid;
+        if (result.length === 0) {
+          connection.query(`INSERT INTO problem(code) VALUES(?)`, [req.body.code]);
+          connection
+            .query(`SELECT * FROM problem WHERE code = ?`, [req.body.code],
+            (errors,result) => (pid = result[0].id));
         } else {
-          pid = result.rows[0].id;
+          pid = result[0].id;
         }
-      });
-    client
+        connection
       .query(
-        `SELECT a.*, b.username FROM review AS a INNER JOIN users AS b ON a.uid = b.id WHERE pid = $1`,
+        `SELECT a.*, b.username FROM review AS a INNER JOIN users AS b ON a.uid = b.id WHERE pid = ?`,
         [pid]
-      )
-      .then((result) => {
+      ,
+      (errors,result) => {
         const reviews = [];
-        for (var id = 0; id < result.rows.length; id++) {
-          const row = result.rows[id];
+        for (var id = 0; id < result.length; id++) {
+          const row = result[id];
           reviews.push({
             id: row.id,
             content: row.content,
             user: row.username,
           });
         }
-        res.send({ id: pid, reviews: reviews });
+        res.send({id: pid, reviews: reviews});
       });
+      });
+
   });
 
   app.post("/newReview", async (req, res) => {
-    await client
-      .query(`SELECT * FROM review WHERE uid = $1 AND pid = $2`, [
+    await connection
+      .query(`SELECT * FROM review WHERE uid = ? AND pid = ?`, [
         req.body.uid,
         req.body.pid,
-      ])
-      .then((result) => {
-        if (result.rowCount) {
+      ],(errors,result) => {
+        if (result.length) {
           res.send({ error: "You have already reviewed this problem" });
         }
       });
-    client
-      .query(`INSERT INTO review(content, uid, pid) VALUES($1, $2, $3)`, [
+    connection
+      .query(`INSERT INTO review(content, uid, pid) VALUES(?,?,?)`, [
         req.body.content,
         req.body.uid,
         req.body.pid,
-      ])
-      .then(() => {
-        client
-          .query(`SELECT review.id FROM review WHERE uid = $1 AND pid = $2`, [
+      ],() => {
+        console.log(req.body.uid);
+        console.log(req.body.pid);
+        connection
+          .query(`SELECT review.id FROM review WHERE uid = ? AND pid = ?`, [
             req.body.uid,
             req.body.pid,
-          ])
-          .then((result) => {
-            res.send({ id: result.rows[0].id });
+          ],(errors,result) => {
+            console.log(result)
+            res.send({ id: result[0].id });
           });
       });
   });
   app.post("/deleteReview", (req, res) => {
-    client.query(`DELETE FROM review WHERE id = $1`, [req.body.id]).then(() => {
+    connection.query(`DELETE FROM review WHERE id = ?`, [req.body.id],() => {
       res.send("success");
     });
   });
